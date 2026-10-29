@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ແຜງຄວບຄຸມແອດມິນ · Admin Dashboard</title>
+<script>src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"</script>
+<script>src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"</script>
+<style>
+  :root {
+    --bg-dark: #061321; --card-bg: #152232; --felt-dark: #0d2847; --gold: #00b0ff; --gold-light: #80d8ff; --ivory: #f0f6fc; --red: #ff3366; --green: #00e5ff; --blue: #00b0ff; --slate: #152232;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: radial-gradient(ellipse at top, #14375a 0%, var(--bg-dark) 85%); color: var(--ivory); font-family: "Segoe UI", "Noto Sans Lao", sans-serif; min-height: 100vh; }
+  header { background: linear-gradient(135deg, #030a14, var(--card-bg)); border-bottom: 2px solid var(--gold); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  header h1 { margin: 0; font-size: 22px; color: var(--gold-light); text-shadow: 0 0 10px rgba(0, 176, 255, 0.4); }
+  .admin-badge { background: rgba(0, 176, 255, 0.15); border: 1px solid var(--gold); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: var(--gold-light); }
+  .container { max-width: 1200px; margin: 30px auto; padding: 0 15px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+  .stat-card { background: var(--card-bg); border: 1px solid rgba(0, 176, 255, 0.2); border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
+  .stat-card h3 { margin: 0 0 10px 0; font-size: 13px; color: #80d8ff; text-transform: uppercase; }
+  .stat-card .value { font-size: 24px; font-weight: bold; color: var(--gold-light); }
+  .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid rgba(0, 176, 255, 0.15); padding-bottom: 10px; }
+  .tab-btn { background: transparent; border: 1px solid rgba(0, 176, 255, 0.25); color: #b0c4de; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
+  .tab-btn.active { background: linear-gradient(180deg, #00e5ff, var(--gold)); color: #061321; font-weight: bold; }
+  .tab-content { display: none; background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 1px solid rgba(0, 176, 255, 0.15); }
+  .tab-content.active { display: block; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13.5px; }
+  th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(0, 176, 255, 0.1); }
+  th { background: rgba(0, 176, 255, 0.08); color: var(--gold-light); font-weight: bold; }
+  .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+  .badge.pending { background: rgba(255, 213, 79, 0.15); color: #ffd54f; }
+  .badge.success { background: rgba(0, 229, 255, 0.15); color: var(--green); }
+  .badge.failed { background: rgba(255, 51, 102, 0.15); color: var(--red); }
+  .btn { padding: 6px 12px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; }
+  .btn-approve { background: linear-gradient(180deg, #00e5ff, var(--gold)); color: #061321; }
+  .btn-reject { background: transparent; color: var(--red); border: 1px solid var(--red); }
+  .btn-view { background: rgba(255,255,255,0.05); color: var(--ivory); border: 1px solid rgba(255,255,255,0.15); }
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+  .modal-overlay.show { display: flex; }
+  .modal-box { background: linear-gradient(180deg, var(--card-bg), #0c141d); border: 2px solid var(--gold); border-radius: 12px; width: 100%; max-width: 450px; padding: 24px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙️ ແຜງຄວບຄຸມແອດມິນ (Card Admin)</h1>
+  <div class="admin-badge">ແອດມິນລະບົບ (Simulation)</div>
+</header>
+<div class="container">
+  <div class="stats-grid">
+    <div class="stat-card"><h3>ຜູ້ໃຊ້ທັງໝົດ</h3><div class="value" id="statTotalUsers">0</div></div>
+    <div class="stat-card"><h3>ອອນລາຍທັງໝົດ</h3><div class="value" id="statOnlineUsers" style="color: var(--green);">0</div></div>
+    <div class="stat-card"><h3>ເຕີມມື້ນີ້ (ສຳເລັດ)</h3><div class="value" id="statTodayDeposit" style="color: var(--green);">0</div></div>
+    <div class="stat-card"><h3>ຖອນມື້ນີ້ (ສຳເລັດ)</h3><div class="value" id="statTodayWithdraw" style="color: var(--red);">0</div></div>
+    <div class="stat-card"><h3>ລາຍການລໍຖ້າອະນຸມັດ</h3><div class="value" id="statPendingCount" style="color: #ffd54f;">0</div></div>
+  </div>
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('tab-deposits')">📥 ລາຍການເຕີມຄະແນນ</button>
+    <button class="tab-btn" onclick="switchTab('tab-withdraws')">📤 ລາຍການຖອນຄະແນນ</button>
+    <button class="tab-btn" onclick="switchTab('tab-users')">👥 ຜູ້ໃຊ້ທັງໝົດ</button>
+    <button class="tab-btn" onclick="switchTab('tab-history')">📊 ສະຖິຕິ ເຕີມ-ຖອນ</button>
+    <button class="tab-btn" onclick="switchTab('tab-referrals')">👥 ລະບົບແນະນຳເພື່ອນ</button>
+    <button class="tab-btn" onclick="switchTab('tab-bets')" style="border-color: #ffd54f; color: #ffd54f;">🎲 ປະຫວັດການຫຼິ້ນທັງໝົດ</button>
+    <button class="tab-btn" onclick="switchTab('tab-rig')" style="border-color: var(--red); color: #ff8080;">⚙️ ຕັ້ງຄ່າການອອກຜົນ</button>
+  </div>
+  <div id="tab-deposits" class="tab-content active">
+    <h2>ລາຍການເຕີມຄະແນນ (ລໍຖ້າອະນຸມັດ)</h2>
+    <table><thead><tr><th>ຜູ້ໃຊ້ / ເບີໂທ</th><th>ຈຳນວນຄະແນນ</th><th>ວັນທີ/ເວລາ</th><th>ຮູບສະລິບ</th><th>ສະຖານະ</th><th>ການຈັດການ</th></tr></thead><tbody id="depositPendingList"></tbody></table>
+  </div>
+  <div id="tab-withdraws" class="tab-content">
+    <h2>ລາຍການຖອນຄະແນນ (ລໍຖ້າອະນຸມັດ)</h2>
+    <table><thead><tr><th>ຜູ້ໃຊ້ / ເບີໂທ</th><th>ຈຳນວນຖອນ</th><th>ຂໍ້ມູນບັນຊີຮັບເງິນ</th><th>ວັນທີ/ເວລາ</th><th>QR ຮັບເງິນ</th><th>ການຈັດການ</th></tr></thead><tbody id="withdrawPendingList"></tbody></table>
+  </div>
+  <div id="tab-users" class="tab-content">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>👥 ລາຍຊື່ຜູ້ໃຊ້ທັງໝົດ</h2>
+      <input type="text" id="userSearchInput" onkeyup="searchUsers()" placeholder="ຄົ້ນຫາ..." style="background:#030a14; border:1px solid var(--gold); border-radius:6px; color:#fff; padding:8px 12px;">
+    </div>
+    <table id="usersTable"><thead><tr><th>ຊື່ຜູ້ໃຊ້</th><th>ເບີໂທ</th><th>ສະຖານະ</th><th>ຄະແນນ</th><th>ເສຍ-ກຳໄລ (P/L)</th><th>ຜູ້ແນະນຳ</th><th>ຄອມມິດຊັ່ນ</th><th>ການຈັດການ</th></tr></thead><tbody id="totalUsersList"></tbody></table>
+  </div>
+  <div id="tab-history" class="tab-content">
+    <h2>📊 ສະຖິຕິຍອດທຸລະກຳ</h2>
+    <div style="margin-bottom:15px;"><label>ເລືອກວັນທີ: </label><input type="date" id="statsDateInput" onchange="loadStatsByDate()" style="background:#030a14; color:#fff; border:1px solid var(--gold); padding:6px 10px; border-radius:6px;"></div>
+    <table><thead><tr><th>ວັນທີ/ເວລາ</th><th>ເບີໂທ</th><th>ປະເພດ</th><th>ຈຳນວນ</th><th>ລາຍລະອຽດ</th><th>ຮູບພາບ</th><th>ສະຖານະ</th></tr></thead><tbody id="dateTransactionsList"></tbody></table>
+  </div>
+  <div id="tab-referrals" class="tab-content">
+    <h2>👥 ລະບົບແນະນຳເພື່ອນ</h2>
+    <table><thead><tr><th>ຜູ້ແນະນຳ</th><th>ເບີໂທ</th><th>ຜູ້ຖືກແນະນຳ</th><th>ຍອດເຕີມເພື່ອນ</th><th>ຄອມ 5%</th><th>ເງິນກີບ (₭)</th></tr></thead><tbody id="referralsList"></tbody></table>
+  </div>
+  <div id="tab-bets" class="tab-content">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>🎲 ປະຫວັດການຫຼິ້ນທັງໝົດ</h2>
+      <button class="btn btn-approve" onclick="renderAllBets()">🔄 ໂຫຼດໃໝ່</button>
+    </div>
+    <table><thead><tr><th>ວັນທີ/ເວລາ</th><th>ຜູ້ໃຊ້</th><th>ຮອບ</th><th>ເລືອກແທງ</th><th>ຈຳນວນ</th><th>ສະຖານະ</th></tr></thead><tbody id="allBetsList"></tbody></table>
+  </div>
+  <div id="tab-rig" class="tab-content">
+    <h2>⚙️ ຕັ້ງຄ່າການຄວບຄຸມການອອກຜົນ (Rig Settings)</h2>
+    <select id="globalRigModeSelect" onchange="saveGlobalRigMode()" style="background:#030a14; border:2px solid var(--gold); color:#fff; border-radius:8px; padding:12px; width:100%; font-weight:bold;">
+      <option value="normal">🟢 ໂໝດປົກກະຕິ (ສຸ່ມອອກຜົນຕາມທຳມະຊາດ)</option>
+      <option value="rigged">🔴 ໂໝດລ໊ອກເສຍ (ອອກຜົນຝັ່ງທີ່ຜູ້ຫຼິ້ນວາງເງິນນ້ອຍທີ່ສຸດ)</option>
+    </select>
+  </div>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAWd4ObjR8SBUwZvS1GCOucpSofLSXfm4g",
+  authDomain: "pokerlao-28583.firebaseapp.com",
+  databaseURL: "https://pokerlao-28583-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pokerlao-28583",
+  storageBucket: "pokerlao-28583.firebasestorage.app",
+  messagingSenderId: "536727263551",
+  appId: "1:536727263551:web:92ccc4cb33dd95fc921b8a"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let accounts = {};
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  if (tabId === 'tab-bets') renderAllBets();
+}
+window.onload = function() {
+  document.getElementById("statsDateInput").value = new Date().toISOString().split('T')[0];
+  db.collection("settings").doc("gameConfig").get().then((doc) => {
+    if (doc.exists && doc.data().rigMode) document.getElementById("globalRigModeSelect").value = doc.data().rigMode;
+  });
+  db.collection("users").onSnapshot((querySnapshot) => {
+    accounts = {};
+    querySnapshot.forEach((doc) => accounts[doc.id] = doc.data());
+    renderOverviewStats();
+    renderPendingDeposits();
+    renderPendingWithdrawals();
+    renderAllUsers();
+    renderReferralsAndCommissions();
+    loadStatsByDate();
+  });
+};
+function saveGlobalRigMode() {
+  db.collection("settings").doc("gameConfig").set({ rigMode: document.getElementById("globalRigModeSelect").value, updatedAt: Date.now() }, { merge: true })
+    .then(() => alert("ບັນທຶກໂໝດອອກຜົນສຳເລັດ! ✅"));
+}
+function renderOverviewStats() {
+  const users = Object.keys(accounts);
+  document.getElementById("statTotalUsers").textContent = users.length;
+  let today = new Date().toLocaleDateString("lo-LA");
+  let dep = 0, wit = 0, pend = 0;
+  users.forEach(ph => {
+    let u = accounts[ph];
+    if (u.transactions) {
+      u.transactions.forEach(t => {
+        if (t.status === "ລໍຖ້າອະນຸມັດ" || t.status === "ກະລຸນາລໍຖ້າແອດມິນ") pend++;
+        if (t.date && t.date.includes(today) && t.status === "ສຳເລັດ") {
+          if (t.type === "deposit") dep += t.amount;
+          if (t.type === "withdraw") wit += t.amount;
+        }
+      });
+    }
+  });
+  document.getElementById("statTodayDeposit").textContent = dep.toLocaleString() + " Value";
+  document.getElementById("statTodayWithdraw").textContent = wit.toLocaleString() + " Value";
+  document.getElementById("statPendingCount").textContent = pend;
+  document.getElementById("statOnlineUsers").textContent = users.length;
+}
+function renderPendingDeposits() {
+  const tbody = document.getElementById("depositPendingList");
+  tbody.innerHTML = "";
+  Object.keys(accounts).forEach(ph => {
+    let u = accounts[ph];
+    if (u.transactions) {
+      u.transactions.forEach(t => {
+        if (t.type === "deposit" && t.status === "ລໍຖ້າອະນຸມັດ") {
+          let tr = document.createElement("tr");
+          tr.innerHTML = "<td>" + u.name + " (" + ph + ")</td><td style='color:var(--gold-light); font-weight:bold;'>" + t.amount.toLocaleString() + "</td><td>" + t.date + "</td><td>-</td><td><span class='badge pending'>ລໍຖ້າອະນຸມັດ</span></td><td><button class='btn btn-approve' onclick='approveDeposit(\"" + ph + "\", " + t.id + ")'>ອະນຸມັດ</button> <button class='btn btn-reject' onclick='rejectDeposit(\"" + ph + "\", " + t.id + ")'>ປະຕິເສດ</button></td>";
+          tbody.appendChild(tr);
+        }
+      });
+    }
+  });
+}
+function renderPendingWithdrawals() {
+  const tbody = document.getElementById("withdrawPendingList");
+  tbody.innerHTML = "";
+  Object.keys(accounts).forEach(ph => {
+    let u = accounts[ph];
+    if (u.transactions) {
+      u.transactions.forEach(t => {
+        if (t.type === "withdraw" && (t.status === "ກະລຸນາລໍຖ້າແອດມິນ" || t.status === "ລໍຖ້າດຳເນີນການ")) {
+          let tr = document.createElement("tr");
+          tr.innerHTML = "<td>" + u.name + " (" + ph + ")</td><td style='color:var(--red); font-weight:bold;'>" + t.amount.toLocaleString() + "</td><td>" + (t.details || '-') + "</td><td>" + t.date + "</td><td>-</td><td><button class='btn btn-approve' onclick='approveWithdraw(\"" + ph + "\", " + t.id + ")'>ອະນຸມັດໂອນ</button> <button class='btn btn-reject' onclick='rejectWithdraw(\"" + ph + "\", " + t.id + ")'>ປະຕິເສດ</button></td>";
+          tbody.appendChild(tr);
+        }
+      });
+    }
+  });
+}
+function renderAllUsers() {
+  const tbody = document.getElementById("totalUsersList");
+  tbody.innerHTML = "";
+  Object.keys(accounts).forEach(ph => {
+    let u = accounts[ph];
+    let tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + u.name + "</td><td>" + ph + "</td><td>🟢 ອອນລາຍ</td><td style='color:var(--gold-light); font-weight:bold;'>" + (u.score || 0).toLocaleString() + "</td><td>0</td><td>" + (u.referredBy || '-') + "</td><td>0</td><td><button class='btn btn-view' onclick='adjustScorePrompt(\"" + ph + "\")'>✏️ ປັບຄະແນນ</button></td>";
+    tbody.appendChild(tr);
+  });
+}
+function adjustScorePrompt(ph) {
+  let val = prompt("ປ້ອນຄະແນນໃໝ່ສຳລັບ " + ph + ":", accounts[ph].score);
+  if (val !== null && !isNaN(val)) {
+    db.collection("users").doc(ph).update({ score: Number(val) }).then(() => alert("ອັບເດດຄະແນນສຳເລັດ!"));
+  }
+}
+function approveDeposit(ph, id) {
+  let u = accounts[ph];
+  let t = u.transactions.find(x => x.id === id);
+  if (t) { t.status = "ສຳເລັດ"; u.score += t.amount; db.collection("users").doc(ph).set(u).then(() => alert("ອະນຸມັດສຳເລັດ!")); }
+}
+function rejectDeposit(ph, id) {
+  let u = accounts[ph];
+  let t = u.transactions.find(x => x.id === id);
+  if (t) { t.status = "ປະຕິເສດ"; db.collection("users").doc(ph).set(u).then(() => alert("ປະຕິເສດແລ້ວ")); }
+}
+function approveWithdraw(ph, id) {
+  let u = accounts[ph];
+  let t = u.transactions.find(x => x.id === id);
+  if (t) { t.status = "ສຳເລັດ"; db.collection("users").doc(ph).set(u).then(() => alert("ອະນຸມັດໂອນແລ້ວ!")); }
+}
+function rejectWithdraw(ph, id) {
+  let u = accounts[ph];
+  let t = u.transactions.find(x => x.id === id);
+  if (t) { t.status = "ປະຕິເສດ"; u.score += t.amount; db.collection("users").doc(ph).set(u).then(() => alert("ຄືນຄະແນນແລ້ວ")); }
+}
+function renderReferralsAndCommissions() {}
+function loadStatsByDate() {}
+function renderAllBets() {}
+function searchUsers() {}
+</script>
+</body>
+</html>

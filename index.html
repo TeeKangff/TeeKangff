@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ທາຍຜົນໄພ່♠️♥️♣️♦️ · POKER PLAY</title>
+<script>src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"</script>
+<script>src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"</script>
+<script>src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"</script>
+<script>src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"</script>
+<style>
+  :root{
+    --felt: #0d2847; --felt-dark: #061321; --gold: #00b0ff; --gold-light: #80d8ff; --ivory: #f0f6fc; --ink: #0a1118; --red: #ff3366; --slate: #152232; --wood: #0a1726; --wood-light: #162a3f;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; min-height:100vh; background: radial-gradient(ellipse at top, #14375a 0%, var(--felt) 45%, var(--felt-dark) 100%); color: var(--ivory); font-family: "Segoe UI", "Noto Sans Lao", sans-serif; -webkit-font-smoothing: antialiased; }
+  .top-action-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 10px; border-bottom: 1px solid rgba(0, 176, 255, 0.15); }
+  .hamburger-btn { background: none; border: none; color: var(--gold-light); font-size: 24px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+  .top-nav-right { display: flex; gap: 10px; align-items: center; }
+  .nav-btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--gold); display: flex; align-items: center; gap: 6px; }
+  .deposit-btn { background: linear-gradient(180deg, #00e5ff, var(--gold)); color: #061321; }
+  .withdraw-btn { background: transparent; color: var(--ivory); border: 1px solid rgba(240, 246, 252, 0.4); }
+  .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: linear-gradient(180deg, var(--felt-dark), #030a14); box-shadow: 4px 0 15px rgba(0,0,0,0.5); z-index: 200; transition: left 0.3s ease; display: flex; flex-direction: column; border-right: 1px solid rgba(0, 176, 255, 0.3); }
+  .sidebar.open { left: 0; }
+  .sidebar-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 176, 255, 0.25); color: var(--gold-light); }
+  .sidebar-content { padding: 20px 16px; flex: 1; display: flex; flex-direction: column; gap: 15px; }
+  .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; display: none; }
+  .sidebar-overlay.show { display: block; }
+  .menu-item { display: flex; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; color: var(--ivory); text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
+  .modal.show { display: flex; }
+  .modal-content { background: linear-gradient(180deg, var(--slate), #0c141d); border: 1px solid rgba(0, 176, 255, 0.4); border-radius: 16px; width: 100%; max-width: 420px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  .form-control-bordered { background: #1a1a1a; border: 1px solid rgba(0, 176, 255, 0.5); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px; width: 100%; outline: none; }
+  .wrap{ max-width: 960px; margin: 0 auto; padding: 10px 16px 60px; }
+  .table-card{ background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.12)); border: 1px solid rgba(0, 176, 255, 0.3); border-radius: 18px; padding: 22px; }
+  .card-slot{ width: 200px; height: 280px; border-radius: 18px; background: var(--ivory); display:flex; align-items:center; justify-content:center; font-size: 80px; color: var(--ink); box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 0 0 5px rgba(0, 176, 255, 0.5); position: relative; margin: 0 auto; }
+  .card-slot.back{ background: repeating-linear-gradient(135deg, var(--felt-dark), var(--felt-dark) 8px, #0e2236 8px, #0e2236 16px); }
+  .card-slot.back::after{ content:"?"; color: var(--gold-light); font-size:64px; }
+  .guess-btns{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top: 15px; }
+  .suit-btn{ width:64px; height:64px; border-radius: 50%; border: 2px solid rgba(0, 176, 255, 0.5); background: linear-gradient(180deg, #163654, #0a1c30); color: var(--ivory); font-size: 26px; cursor:pointer; }
+  .bet-btn{ background: rgba(255,255,255,0.06); border: 1px solid rgba(0, 176, 255, 0.4); color: var(--ivory); border-radius: 8px; padding: 8px 16px; font-weight: 700; cursor: pointer; }
+  .bet-btn.active{ background: linear-gradient(180deg, #00b0ff, #003366) !important; color: #fff !important; }
+  .deposit-step { display: none; flex-direction: column; align-items: center; gap: 15px; }
+  .deposit-step.active { display: flex; }
+  .deposit-grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header"><h3>ເມນູ</h3><button onclick="toggleSidebar(false)" style="background:none; border:none; color:#fff; font-size:24px;">&times;</button></div>
+  <div class="sidebar-content">
+    <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px;">
+      <h4 id="sidebarName">ຜູ້ຫຼິ້ນ</h4>
+      <div style="color:var(--gold-light); font-weight:bold; margin-top:5px;">ຄະແນນ: <span id="sidebarPoints">0</span></div>
+    </div>
+    <div class="menu-item" onclick="openDepositModal()">💰 ເຕີມເງິນ BCEL OnePay</div>
+    <div class="menu-item" onclick="openWithdrawModal()">💸 ຖອນເງິນ</div>
+    <div class="menu-item" onclick="logoutUser()" style="color:#ff8080;">🚪 ອອກຈາກລະບົບ</div>
+  </div>
+</div>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
+<div class="wrap">
+  <div class="top-action-bar">
+    <button class="hamburger-btn" onclick="toggleSidebar(true)">☰ ເມນູ</button>
+    <div class="top-nav-right">
+      <button class="nav-btn deposit-btn" onclick="openDepositModal()">💰 ເຕີມເງີນ (Auto)</button>
+      <button class="nav-btn withdraw-btn" onclick="openWithdrawModal()">💸 ຖອນເງີນ</button>
+    </div>
+  </div>
+  <h1 style="text-align:center; color:var(--gold-light); margin: 20px 0;">ທາຍຜົນໄພ່♠️♥️♣️♦️</h1>
+  <div class="table-card">
+    <div style="text-align:center; margin-bottom:15px;">
+      <div class="card-slot back" id="guessCard"></div>
+      <div id="guessMsg" style="font-size:14px; color:#b8cfc2; margin-top:10px;">ເລືອກດອກທີ່ທ່ານຄິດວ່າຈະອອກ</div>
+      <div style="font-size: 20px; font-weight:bold; color:var(--gold-light); margin-top:10px;">ຄະແນນຂອງທ່ານ: <span id="guessScore">0</span></div>
+    </div>
+    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:15px;">
+      <button class="bet-btn active" onclick="setBet(5, this)">5</button>
+      <button class="bet-btn" onclick="setBet(10, this)">10</button>
+      <button class="bet-btn" onclick="setBet(20, this)">20</button>
+      <button class="bet-btn" onclick="setBet(50, this)">50</button>
+      <button class="bet-btn" onclick="setBet(100, this)">100</button>
+    </div>
+    <div class="guess-btns">
+      <button class="suit-btn" onclick="placeBet('S')">♠</button>
+      <button class="suit-btn" style="color:var(--red);" onclick="placeBet('H')">♥</button>
+      <button class="suit-btn" onclick="placeBet('C')">♣</button>
+      <button class="suit-btn" style="color:var(--red);" onclick="placeBet('D')">♦</button>
+      <button class="suit-btn" style="color:var(--gold-light);" onclick="placeBet('J')">🃏</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTO BCEL DEPOSIT MODAL -->
+<div id="depModal" class="modal">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="color:var(--gold-light); margin:0;">💰 ເຕີມເງິນ BCEL OnePay (ອັດຕະໂນມັດ)</h3>
+      <button onclick="closeDepositModal()" style="background:none; border:none; color:#fff; font-size:22px; cursor:pointer;">&times;</button>
+    </div>
+    <div id="depStep1" class="deposit-step active">
+      <label style="font-size:12px; color:#b8cfc2;">ລະບຸຈຳນວນເງິນ (1 ຄະແນນ = 1,000 ກີບ)</label>
+      <input type="number" id="depAmountInput" class="form-control-bordered" style="text-align:center; font-size:20px; font-weight:bold; color:var(--gold-light);" value="10" min="5">
+      <div class="deposit-grid-6">
+        <button class="bet-btn" onclick="selectDepAmt(5)">5</button>
+        <button class="bet-btn" onclick="selectDepAmt(10)">10</button>
+        <button class="bet-btn" onclick="selectDepAmt(20)">20</button>
+        <button class="bet-btn" onclick="selectDepAmt(50)">50</button>
+        <button class="bet-btn" onclick="selectDepAmt(100)">100</button>
+        <button class="bet-btn" onclick="selectDepAmt(500)">500</button>
+      </div>
+      <button class="nav-btn deposit-btn" style="width:100%; justify-content:center; padding:12px;" onclick="goToDepStep2()">ດຳເນີນການຕໍ່</button>
+    </div>
+    <div id="depStep2" class="deposit-step">
+      <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; width:100%; text-align:center;">
+        <div style="font-size:12px; color:#b8cfc2;">ຍອດທີ່ຕ້ອງຊຳລະ:</div>
+        <div id="depConfirmAmt" style="font-size:24px; font-weight:bold; color:var(--gold-light); margin-top:5px;">0 LAK</div>
+      </div>
+      <div style="display:flex; gap:10px; width:100%;">
+        <button class="nav-btn withdraw-btn" style="flex:1; justify-content:center;" onclick="goToDepStep1()">ຍົກເລີກ</button>
+        <button class="nav-btn deposit-btn" style="flex:1; justify-content:center;" onclick="generateBcelQr()">ສ້າງ QR Code</button>
+      </div>
+    </div>
+    <div id="depStep3" class="deposit-step">
+      <div style="background:#fff; padding:15px; border-radius:12px; display:flex; flex-direction:column; align-items:center;">
+        <div id="depQrContainer" style="min-height:200px; display:flex; align-items:center; justify-content:center;"></div>
+        <div id="depMerchantTitle" style="font-size:12px; color:#333; font-weight:bold; margin-top:8px;">BCEL OnePay</div>
+      </div>
+      <div id="depAutoCheckStatus" style="font-size:13px; color:#ffd54f; text-align:center;">🔄 ກຳລັງລໍຖ້າການຊຳລະເງິນ... (ລະບົບກວດສອບອັດຕະໂນມັດ)</div>
+      <button class="nav-btn withdraw-btn" style="width:100%; justify-content:center;" onclick="closeDepositModal()">ຍົກເລີກ / ປິດ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAWd4ObjR8SBUwZvS1GCOucpSofLSXfm4g",
+  authDomain: "pokerlao-28583.firebaseapp.com",
+  databaseURL: "https://pokerlao-28583-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pokerlao-28583",
+  storageBucket: "pokerlao-28583.firebasestorage.app",
+  messagingSenderId: "536727263551",
+  appId: "1:536727263551:web:92ccc4cb33dd95fc921b8a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentUser = JSON.parse(localStorage.getItem("card_app_current_user")) || { phone: "+856 20 99999999", name: "ຜູ້ຫຼິ້ນ", score: 10 };
+let currentBet = 5;
+let targetDepositAmt = 10;
+let payCheckTimer = null;
+
+function updateUI() {
+  document.getElementById("guessScore").textContent = (currentUser.score || 0).toLocaleString();
+  document.getElementById("sidebarPoints").textContent = (currentUser.score || 0).toLocaleString();
+}
+updateUI();
+
+function toggleSidebar(open) {
+  document.getElementById("sidebar").classList.toggle("open", open);
+  document.getElementById("sidebarOverlay").classList.toggle("show", open);
+}
+function setBet(amt, btn) {
+  currentBet = amt;
+  document.querySelectorAll(".bet-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+function placeBet(suit) {
+  if (currentUser.score < currentBet) return alert("ຄະແນນບໍ່ພໍ!");
+  currentUser.score -= currentBet;
+  updateUI();
+  alert("ວາງເດີມພັນດອກ " + suit + " ຈຳນວນ " + currentBet + " ຄະແນນສຳເລັດ!");
+}
+function openDepositModal() {
+  toggleSidebar(false);
+  document.getElementById("depStep1").classList.add("active");
+  document.getElementById("depStep2").classList.remove("active");
+  document.getElementById("depStep3").classList.remove("active");
+  document.getElementById("depModal").classList.add("show");
+}
+function closeDepositModal() {
+  if (payCheckTimer) clearInterval(payCheckTimer);
+  document.getElementById("depModal").classList.remove("show");
+}
+function selectDepAmt(amt) {
+  document.getElementById("depAmountInput").value = amt;
+}
+function goToDepStep2() {
+  targetDepositAmt = Number(document.getElementById("depAmountInput").value) || 10;
+  document.getElementById("depConfirmAmt").textContent = (targetDepositAmt * 1000).toLocaleString() + " LAK";
+  document.getElementById("depStep1").classList.remove("active");
+  document.getElementById("depStep2").classList.add("active");
+}
+function goToDepStep1() {
+  document.getElementById("depStep2").classList.remove("active");
+  document.getElementById("depStep1").classList.add("active");
+}
+async function generateBcelQr() {
+  const kip = targetDepositAmt * 1000;
+  document.getElementById("depStep2").classList.remove("active");
+  document.getElementById("depStep3").classList.add("active");
+  const qrBox = document.getElementById("depQrContainer");
+  qrBox.innerHTML = "ກຳລັງສ້າງ QR...";
+  try {
+    const res = await fetch("api.php?action=qr&amount=" + kip).then(r => r.json());
+    if (res.status !== "success" || !res.data.payload) throw new Error(res.message || "ສ້າງ QR ບໍ່ສຳເລັດ");
+    qrBox.innerHTML = "";
+    new QRCode(qrBox, { text: res.data.payload, width: 200, height: 200 });
+    if (res.data.owner) document.getElementById("depMerchantTitle").textContent = res.data.owner;
+    startAutoCheck(kip, targetDepositAmt);
+  } catch(e) {
+    qrBox.innerHTML = "<span style='color:red;'>ເກີດຂໍ້ຜິດພາດ: " + e.message + "</span>";
+  }
+}
+function startAutoCheck(kip, points) {
+  if (payCheckTimer) clearInterval(payCheckTimer);
+  payCheckTimer = setInterval(async () => {
+    try {
+      const res = await fetch("api.php?action=check_payment&amount=" + kip).then(r => r.json());
+      if (res.status === "success" && res.paid) {
+        clearInterval(payCheckTimer);
+        currentUser.score += points;
+        updateUI();
+        alert("✅ ໄດ້ຮັບເງິນແລ້ວ! ເຕີມສຳເລັດ +" + points + " ຄະແນນ.");
+        closeDepositModal();
+      }
+    } catch(e) {}
+  }, 3500);
+}
+function openWithdrawModal() { alert("ກະລຸນາຕິດຕໍ່ແອດມິນເພື່ອຖອນເງິນ."); }
+function logoutUser() { alert("ອອກຈາກລະບົບແລ້ວ."); }
+</script>
+</body>
+</html>
